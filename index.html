@@ -51,7 +51,7 @@ nav a{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;font-s
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
 // ▼▼ Colle ici ta config Firebase (objet {apiKey:…, authDomain:…, projectId:…, appId:…}). Laisse null = mode local.
-const FB=null;
+const FB={apiKey:"AIzaSyCG9CDo2O1CC2JOllb40FtB2bGRT_XEROI",authDomain:"mon-hub-ecd00.firebaseapp.com",projectId:"mon-hub-ecd00",appId:"1:320572852886:web:0da186b6680c724a7cd0b7"};
 // ▲▲
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
