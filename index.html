@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="theme-color" content="#5b4bdb">
+<title>Mon Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg1:#f3f0ff;--bg2:#e3f6f1;--card:rgba(255,255,255,.62);--bd:rgba(255,255,255,.85);--tx:#1c1a2e;--mu:#6a6782;--ac:#5b4bdb;--ac2:#0fa89a;--in:rgba(255,255,255,.7)}
+@media(prefers-color-scheme:dark){:root{--bg1:#15122e;--bg2:#0a2626;--card:rgba(255,255,255,.07);--bd:rgba(255,255,255,.13);--tx:#f0edff;--mu:#a5a2bf;--ac:#9d90ff;--in:rgba(255,255,255,.08)}}
+*{box-sizing:border-box;margin:0}
+body{font:16px/1.45 'Bricolage Grotesque',ui-rounded,system-ui,sans-serif;color:var(--tx);min-height:100vh;background:radial-gradient(60% 45% at 8% 0,#a78bfa66,transparent),radial-gradient(50% 45% at 100% 25%,#2dd4bf55,transparent),radial-gradient(40% 40% at 30% 100%,#f9a8d433,transparent),linear-gradient(160deg,var(--bg1),var(--bg2));background-attachment:fixed;padding:env(safe-area-inset-top) 0 calc(96px + env(safe-area-inset-bottom))}
+header,main{max-width:760px;margin:0 auto;padding:14px 16px}
+header h1{font-size:1.6rem;font-weight:800;letter-spacing:-.03em}
+#q{width:100%;margin-top:10px}
+h2{font-size:1.9rem;font-weight:800;letter-spacing:-.03em;margin:6px 0 14px}
+h3{font-size:1.05rem;font-weight:600;margin-bottom:8px}
+small,.mu{color:var(--mu);font-size:.85rem}
+.card{background:var(--card);border:1px solid var(--bd);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-radius:22px;padding:16px;margin-bottom:12px;display:block}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.grid .card{margin:0;cursor:pointer;display:flex;flex-direction:column;gap:4px;min-height:112px}
+.grid .big{grid-column:span 2;min-height:150px;background:linear-gradient(135deg,#5b4bdb,#0fa89a);color:#fff}.grid .big small{color:#ffffffcc}
+.n{font-size:2.6rem;font-weight:800;letter-spacing:-.04em;line-height:1}
+input,textarea,select{width:100%;font:inherit;color:var(--tx);background:var(--in);border:1px solid var(--bd);border-radius:14px;padding:11px 13px;margin-bottom:8px}
+textarea{min-height:72px;resize:vertical}input[type=checkbox]{width:22px;height:22px;margin:0;accent-color:var(--ac)}
+input:focus,textarea:focus,select:focus,button:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
+.btn{font:inherit;font-weight:600;border:0;border-radius:14px;padding:11px 16px;background:var(--ac);color:#fff;cursor:pointer;margin-right:6px;margin-bottom:6px}
+@media(prefers-color-scheme:dark){.btn{color:#15122e}}
+.btn.alt{background:var(--in);color:var(--tx);border:1px solid var(--bd)}
+.row{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:12px 14px;margin-bottom:8px}
+.row.done .g b{text-decoration:line-through;color:var(--mu);font-weight:400}.g{flex:1;min-width:0;display:flex;flex-direction:column}.g a,.g small{overflow-wrap:anywhere}.g a{color:var(--ac2);font-size:.85rem}
+.chip{background:var(--in);border-radius:99px;padding:3px 10px;font-size:.8rem;white-space:nowrap}
+.x{border:0;background:none;color:var(--mu);font-size:1.1rem;cursor:pointer;padding:4px 8px}
+.bar{height:10px;border-radius:9px;background:var(--in);margin:10px 0 6px;overflow:hidden}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--ac),var(--ac2));border-radius:9px;transition:width .5s}
+nav{position:fixed;left:0;right:0;bottom:0;display:flex;gap:4px;overflow-x:auto;padding:8px 10px calc(8px + env(safe-area-inset-bottom));background:var(--card);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border-top:1px solid var(--bd);scrollbar-width:none}
+nav a{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;font-size:.72rem;padding:6px 11px;border-radius:14px;color:var(--mu);cursor:pointer}nav a span{font-size:1.3rem}nav a.on{background:var(--in);color:var(--tx);font-weight:600}
+#fab{position:fixed;right:18px;bottom:calc(86px + env(safe-area-inset-bottom));width:58px;height:58px;border-radius:50%;border:0;background:var(--ac);color:#fff;font-size:2rem;box-shadow:0 8px 24px #5b4bdb66;cursor:pointer;z-index:5}
+@media(prefers-color-scheme:dark){#fab{color:#15122e}}
+#sh{display:none;position:fixed;inset:0;background:#0007;z-index:9;align-items:flex-end}#sh.on{display:flex}#sh .card{width:100%;max-width:760px;margin:0 auto;border-radius:26px 26px 0 0;background:var(--bg1);padding-bottom:calc(20px + env(safe-area-inset-bottom))}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style></head><body>
+<header><h1>Mon Hub</h1><input id="q" type="search" placeholder="Rechercher partout…" oninput="q=this.value.trim().toLowerCase();render()"></header>
+<main id="app"></main><nav id="nav"></nav>
+<button id="fab" onclick="sh.classList.add('on');ft.focus()" aria-label="Ajout rapide">+</button>
+<div id="sh" onclick="if(event.target==sh)sh.classList.remove('on')"><div class="card"><h3>Ajout rapide</h3>
+<select id="fs"><option value="task">✅ Tâche</option><option value="shop">🛒 Course</option><option value="note">📝 Note</option><option value="idea">💡 Idée</option><option value="wish">🎁 Envie</option></select>
+<input id="ft" placeholder="Qu'est-ce qu'on ajoute ?" onkeydown="if(event.key=='Enter')quick()"><button class="btn" onclick="quick()">Ajouter</button><button class="btn alt" onclick="sh.classList.remove('on')">Fermer</button></div></div>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+// ▼▼ Colle ici ta config Firebase (objet {apiKey:…, authDomain:…, projectId:…, appId:…}). Laisse null = mode local.
+const FB=null;
+// ▲▲
+const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const today=new Date().toISOString().slice(0,10);
+let S=JSON.parse(localStorage.hub||'{"items":[],"code":""}'),tab='home',q='',user=null,db=null,R={p:[],s:[]},unsub=[];
+if(!S.seeded){S.seeded=1;[['Cave à vin','https://durandkelianfac-bit.github.io/Cave-vin/'],['Carnet de cuisine','https://durandkelianfac-bit.github.io/Carnet-de-cuisine/']].forEach(([title,url])=>S.items.push({id:uid(),t:'site',title,url,ts:Date.now()}));localStorage.hub=JSON.stringify(S)}
+const save=()=>localStorage.hub=JSON.stringify(S);
+const L=t=>S.items.filter(i=>i.t===t);
+const days=d=>Math.ceil((new Date(d)-new Date().setHours(0,0,0,0))/864e5);
+const eur=n=>(+n||0).toLocaleString('fr-FR',{style:'currency',currency:'EUR'});
+const fd=d=>new Date(d).toLocaleDateString('fr-FR');
+const T={
+ task:{n:'Tâches',i:'✅',ph:'Nouvelle tâche',f:[['due','date']],chk:1},
+ shop:{n:'Courses',i:'🛒',ph:'Ajouter un article',chk:1},
+ site:{n:'Mes sites',i:'🔗',ph:'Nom du site',f:[['url','url','https://…']]},
+ note:{n:'Notes',i:'📝',ph:'Titre',f:[['text','area','Contenu…']]},
+ idea:{n:'Idées',i:'💡',ph:'Nouvelle idée',f:[['text','area','Détails…']]},
+ wish:{n:'Envies',i:'🎁',ph:'Article',f:[['url','url','Lien'],['price','number','Prix (€)']],chk:1},
+ count:{n:'Dates',i:'⏳',ph:'Événement',f:[['date','date']]}
+};
+const TABS=[['home','🏠','Accueil'],['task','✅','Tâches'],['shop','🛒','Courses'],['site','🔗','Sites'],['note','📝','Notes'],['idea','💡','Idées'],['wish','🎁','Envies'],['loan','💶','Prêt'],['count','⏳','Dates'],['tools','🧰','Outils'],['set','⚙️','Réglages']];
+$('#nav').innerHTML=TABS.map(([t,i,n])=>`<a data-t="${t}" onclick="go('${t}')"><span>${i}</span>${n}</a>`).join('');
+const go=t=>{tab=t;q='';$('#q').value='';render();scrollTo(0,0)};
+// ---- données & synchro
+function col(it){return it.t==='shop'&&S.code?db.collection('shared').doc(S.code).collection('items'):db.collection('users').doc(user.uid).collection('items')}
+function push(it,rm){if(!db||!user)return;try{const d=col(it).doc(it.id);rm?d.delete():d.set(it)}catch(e){}}
+function put(it){const i=S.items.findIndex(x=>x.id===it.id);i<0?S.items.push(it):S.items[i]=it;save();push(it);render()}
+function del(id){const it=S.items.find(x=>x.id===id);S.items=S.items.filter(x=>x.id!==id);save();if(it)push(it,1);render()}
+function merge(){const ids=new Set();S.items=[...R.p,...R.s].filter(i=>!ids.has(i.id)&&ids.add(i.id));save();render()}
+function sub(){unsub.forEach(f=>f());unsub=[];if(!db||!user)return;
+ unsub.push(db.collection('users').doc(user.uid).collection('items').onSnapshot(s=>{R.p=s.docs.map(d=>d.data());if(!R.p.length&&!R.init&&S.items.length){R.init=1;S.items.forEach(i=>push(i))}merge()}));
+ if(S.code)unsub.push(db.collection('shared').doc(S.code).collection('items').onSnapshot(s=>{R.s=s.docs.map(d=>d.data());merge()}))}
+if(FB&&window.firebase){firebase.initializeApp(FB);db=firebase.firestore();db.enablePersistence({synchronizeTabs:true}).catch(()=>{});firebase.auth().onAuthStateChanged(u=>{user=u;sub();render()})}
+const login=()=>firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>alert(e.message));
+// ---- actions
+function add(e,t){e.preventDefault();const it={id:uid(),t,ts:Date.now()};for(const[k,v]of new FormData(e.target).entries())it[k]=v;if(T[t].chk)it.done=false;put(it)}
+function tog(id){const it=S.items.find(x=>x.id===id);it.done=!it.done;put(it)}
+function clearDone(){L('shop').filter(x=>x.done).forEach(x=>del(x.id))}
+function quick(){const v=ft.value.trim();if(!v)return;const t=fs.value,it={id:uid(),t,title:v,ts:Date.now()};if(T[t].chk)it.done=false;put(it);ft.value='';sh.classList.remove('on')}
+function setLoan(e){e.preventDefault();const f=Object.fromEntries(new FormData(e.target));put({id:'loan',t:'loan',...f})}
+function pay(a,d){put({id:uid(),t:'pay',amount:a,date:d||today,ts:Date.now()})}
+function payF(e){e.preventDefault();const f=new FormData(e.target);pay(f.get('amount'),f.get('date'))}
+function setCode(){S.code=cd.value.trim();save();R.s=[];sub();render()}
+function exp(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(S,null,1)],{type:'application/json'}));a.download='hub-sauvegarde-'+today+'.json';a.click()}
+function imp(el){const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(!Array.isArray(d.items))throw 0;const m=new Map(S.items.map(i=>[i.id,i]));d.items.forEach(i=>m.set(i.id,i));S.items=[...m.values()];save();S.items.forEach(i=>push(i));render();alert('Import terminé')}catch(e){alert('Fichier invalide')}};r.readAsText(el.files[0])}
+// ---- vues
+function row(i){const c=T[i.t]||{};let m='';
+ if(i.due)m=fd(i.due);if(i.price)m=eur(i.price);if(i.date)m=days(i.date)>=0?'J-'+days(i.date):'passé';
+ const u=/^https?:\/\//.test(i.url||'')?`<a href="${esc(i.url)}" target="_blank" rel="noopener">${esc(i.url.replace(/^https?:\/\//,''))}</a>`:'';
+ return `<div class="row ${i.done?'done':''}">${c.chk?`<input type="checkbox" ${i.done?'checked':''} onchange="tog('${i.id}')">`:''}<div class="g"><b>${q?(c.i||'')+' ':''}${esc(i.title)}</b>${i.text?`<small>${esc(i.text)}</small>`:''}${u}</div>${m?`<span class="chip">${m}</span>`:''}<button class="x" onclick="del('${i.id}')" aria-label="Supprimer">✕</button></div>`}
+function list(t){const c=T[t];let h=`<h2>${c.i} ${c.n}</h2><div class="card"><form onsubmit="add(event,'${t}')"><input name="title" placeholder="${c.ph}" required>`;
+ (c.f||[]).forEach(([k,ty,ph])=>h+=ty=='area'?`<textarea name="${k}" placeholder="${ph}"></textarea>`:`<input name="${k}" type="${ty}" ${ph?`placeholder="${ph}"`:''} ${ty=='number'?'step="0.01"':''} ${t=='count'?'required':''}>`);
+ h+=`<button class="btn">Ajouter</button>${t=='shop'?'<button type="button" class="btn alt" onclick="clearDone()">Vider les cochés</button>':''}</form></div>`;
+ const a=L(t).sort((x,y)=>t=='count'?(x.date>y.date?1:-1):(x.done-y.done)||(t=='task'&&x.due&&y.due?(x.due>y.due?1:-1):y.ts-x.ts));
+ return h+(a.map(row).join('')||'<p class="mu">Rien ici pour l\'instant. Ajoute le premier élément ci-dessus.</p>')}
+function home(){const tk=L('task').filter(x=>!x.done).length,sh=L('shop').filter(x=>!x.done).length,
+ nx=L('count').filter(x=>days(x.date)>=0).sort((a,b)=>a.date>b.date?1:-1)[0],lo=L('loan')[0],paid=L('pay').reduce((s,x)=>s+ +x.amount,0),pc=lo&&+lo.total?Math.min(100,paid/lo.total*100):0;
+ return `<h2>Bonjour 👋</h2><div class="grid">
+<div class="card big" onclick="go('task')"><small>Tâches</small><span class="n">${tk}</span><span>${tk>1?'à faire':'à faire'}</span></div>
+<div class="card" onclick="go('shop')"><small>Courses</small><span class="n">${sh}</span><small>article${sh>1?'s':''}</small></div>
+<div class="card" onclick="go('count')"><small>Prochaine date</small><b>${nx?esc(nx.title):'—'}</b><span>${nx?'J-'+days(nx.date):''}</span></div>
+<div class="card" onclick="go('loan')"><small>Remboursement</small><b>${Math.round(pc)} %</b><div class="bar"><i style="width:${pc}%"></i></div></div>
+<div class="card" onclick="go('tools')"><small>Boîte à outils</small><b>🧰</b><small>minuteur, décideur…</small></div></div>`}
+function loan(){const lo=L('loan')[0]||{},paid=L('pay').reduce((s,x)=>s+ +x.amount,0),left=Math.max(0,(+lo.total||0)-paid),pc=+lo.total?Math.min(100,paid/lo.total*100):0;
+ let nx='';if(lo.day){const d=new Date(),n=new Date(d.getFullYear(),d.getMonth(),+lo.day);if(n<new Date(d.setHours(0,0,0,0)))n.setMonth(n.getMonth()+1);nx=`<small>Prochaine échéance : ${n.toLocaleDateString('fr-FR')}</small>`}
+ return `<h2>💶 Remboursement</h2><div class="card"><span class="n">${eur(left)}</span><div class="mu">restants sur ${eur(lo.total)}</div><div class="bar"><i style="width:${pc}%"></i></div><small>${eur(paid)} remboursés (${Math.round(pc)} %)</small><br>${nx}</div>
+<div class="card"><h3>Nouveau virement</h3>${lo.monthly?`<button class="btn" onclick="pay(${+lo.monthly})">Mensualité de ${eur(lo.monthly)} effectuée</button>`:''}<form onsubmit="payF(event)"><input name="amount" type="number" step="0.01" placeholder="Montant libre (€)" required><input name="date" type="date" value="${today}"><button class="btn alt">Ajouter ce virement</button></form></div>
+<div class="card"><h3>Réglages</h3><form onsubmit="setLoan(event)"><input name="total" type="number" step="0.01" placeholder="Montant total à rembourser (€)" value="${lo.total||''}" required><input name="monthly" type="number" step="0.01" placeholder="Mensualité (€)" value="${lo.monthly||''}"><input name="day" type="number" min="1" max="31" placeholder="Jour du virement (1 à 31)" value="${lo.day||''}"><button class="btn">Enregistrer</button></form></div>
+<h3>Historique</h3>${L('pay').sort((a,b)=>a.date<b.date?1:-1).map(p=>`<div class="row"><div class="g"><b>${eur(p.amount)}</b></div><span class="chip">${fd(p.date)}</span><button class="x" onclick="del('${p.id}')" aria-label="Supprimer">✕</button></div>`).join('')||'<p class="mu">Aucun virement enregistré.</p>'}`}
+const CV=[['km → mi',x=>x/1.609344],['mi → km',x=>x*1.609344],['kg → lb',x=>x*2.20462],['lb → kg',x=>x/2.20462],['°C → °F',x=>x*9/5+32],['°F → °C',x=>(x-32)*5/9]];
+function tools(){return `<h2>🧰 Boîte à outils</h2>
+<div class="card"><h3>⏱ Minuteur</h3><input id="tm" type="number" value="5" min="1"><button class="btn" onclick="timer()">Démarrer (minutes)</button><div class="n" id="td"></div></div>
+<div class="card"><h3>🎲 Décideur</h3><textarea id="dc" placeholder="Une option par ligne"></textarea><button class="btn" onclick="decide()">Tirer au sort</button><div class="n" id="dr" style="font-size:1.8rem"></div></div>
+<div class="card"><h3>🔄 Convertisseur</h3><input id="cv" type="number" step="any" placeholder="Valeur" oninput="conv()"><select id="cu" onchange="conv()">${CV.map((c,i)=>`<option value="${i}">${c[0]}</option>`).join('')}</select><div class="n" id="co" style="font-size:1.8rem"></div></div>`}
+let tmr;function timer(){clearInterval(tmr);let s=Math.round(+$('#tm').value*60);const up=()=>{const e=$('#td');if(e)e.textContent=Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};up();
+ tmr=setInterval(()=>{s--;up();if(s<=0){clearInterval(tmr);navigator.vibrate&&navigator.vibrate([300,150,300]);alert('⏱ Minuteur terminé')}},1e3)}
+function decide(){const o=$('#dc').value.split('\n').map(x=>x.trim()).filter(Boolean);if(o.length<2)return;let n=0;const r=$('#dr'),iv=setInterval(()=>{r.textContent=o[Math.floor(Math.random()*o.length)];if(++n>18){clearInterval(iv);r.textContent='👉 '+r.textContent}},90)}
+function conv(){const v=parseFloat($('#cv').value);$('#co').textContent=isNaN(v)?'':(+CV[$('#cu').value][1](v).toFixed(2)).toLocaleString('fr-FR')}
+function set(){return `<h2>⚙️ Réglages</h2><div class="card"><h3>Synchronisation</h3>${!FB?'<small>Mode local : les données restent sur cet appareil. Ajoute ta config Firebase en haut du fichier pour synchroniser.</small>':user?`<p>Connecté : ${esc(user.email)}</p><button class="btn alt" onclick="firebase.auth().signOut()">Se déconnecter</button>`:'<button class="btn" onclick="login()">Connexion avec Google</button>'}</div>
+<div class="card"><h3>Courses partagées</h3><small>Entre le même code chez chaque personne (choisis-en un long, il sert de mot de passe).</small><input id="cd" value="${esc(S.code)}" placeholder="Code de partage"><button class="btn" onclick="setCode()">Enregistrer le code</button></div>
+<div class="card"><h3>Sauvegarde</h3><button class="btn" onclick="exp()">Exporter en JSON</button><input type="file" accept=".json" onchange="imp(this)"><small>Choisis un fichier exporté pour restaurer tes données.</small></div>`}
+function search(){const a=S.items.filter(i=>['title','text','url'].some(k=>String(i[k]||'').toLowerCase().includes(q))&&T[i.t]);return `<h2>Résultats</h2>`+(a.map(row).join('')||'<p class="mu">Aucun résultat.</p>')}
+function render(){$('#app').innerHTML=q?search():({home,loan,tools,set}[tab]||(()=>list(tab)))();document.querySelectorAll('nav a').forEach(a=>a.classList.toggle('on',a.dataset.t==tab))}
+render();
+</script></body></html>
