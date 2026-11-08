@@ -35,6 +35,8 @@ nav a{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;font-s
 #fab{position:fixed;right:18px;bottom:calc(86px + env(safe-area-inset-bottom));width:58px;height:58px;border-radius:50%;border:0;background:var(--ac);color:#fff;font-size:2rem;box-shadow:0 8px 24px #5b4bdb66;cursor:pointer;z-index:5}
 @media(prefers-color-scheme:dark){#fab{color:#15122e}}
 #sh{display:none;position:fixed;inset:0;background:#0007;z-index:9;align-items:flex-end}#sh.on{display:flex}#sh .card{width:100%;max-width:760px;margin:0 auto;border-radius:26px 26px 0 0;background:var(--bg1);padding-bottom:calc(20px + env(safe-area-inset-bottom))}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:8px}.cal>*{min-width:0}.dw{text-align:center}.pn{display:flex;align-items:center;justify-content:space-between}.pn .btn{margin:0}.pn h3{margin:0}
+.cd{aspect-ratio:1;border-radius:12px;background:var(--in);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1;font-size:.7rem;cursor:pointer}.cd span{font-weight:800;font-size:.9rem}.cd small{font-size:.6rem}.cd.jour{background:#f5b94250}.cd.nuit{background:#5b4bdb45}.cd.td{outline:2px solid var(--ac2)}.cd.sel{outline:2px solid var(--ac)}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style></head><body>
 <header><h1>Mon Hub</h1><input id="q" type="search" placeholder="Rechercher partout…" oninput="q=this.value.trim().toLowerCase();render()"></header>
@@ -43,6 +45,7 @@ nav a{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;font-s
 <div id="sh" onclick="if(event.target==sh)sh.classList.remove('on')"><div class="card"><h3>Ajout rapide</h3>
 <select id="fs"><option value="task">✅ Tâche</option><option value="shop">🛒 Course</option><option value="note">📝 Note</option><option value="idea">💡 Idée</option><option value="wish">🎁 Envie</option></select>
 <input id="ft" placeholder="Qu'est-ce qu'on ajoute ?" onkeydown="if(event.key=='Enter')quick()"><button class="btn" onclick="quick()">Ajouter</button><button class="btn alt" onclick="sh.classList.remove('on')">Fermer</button></div></div>
+<script src="planning.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -69,7 +72,7 @@ const T={
  wish:{n:'Envies',i:'🎁',ph:'Article',f:[['url','url','Lien'],['price','number','Prix (€)']],chk:1},
  count:{n:'Dates',i:'⏳',ph:'Événement',f:[['date','date']]}
 };
-const TABS=[['home','🏠','Accueil'],['task','✅','Tâches'],['shop','🛒','Courses'],['site','🔗','Sites'],['note','📝','Notes'],['idea','💡','Idées'],['wish','🎁','Envies'],['loan','💶','Prêt'],['count','⏳','Dates'],['tools','🧰','Outils'],['set','⚙️','Réglages']];
+const TABS=[['home','🏠','Accueil'],['task','✅','Tâches'],['plan','🗓','Planning'],['shop','🛒','Courses'],['site','🔗','Sites'],['note','📝','Notes'],['idea','💡','Idées'],['wish','🎁','Envies'],['loan','💶','Prêt'],['count','⏳','Dates'],['tools','🧰','Outils'],['set','⚙️','Réglages']];
 $('#nav').innerHTML=TABS.map(([t,i,n])=>`<a data-t="${t}" onclick="go('${t}')"><span>${i}</span>${n}</a>`).join('');
 const go=t=>{tab=t;q='';$('#q').value='';render();scrollTo(0,0)};
 // ---- données & synchro
@@ -106,11 +109,13 @@ function list(t){const c=T[t];let h=`<h2>${c.i} ${c.n}</h2><div class="card"><fo
  return h+(a.map(row).join('')||'<p class="mu">Rien ici pour l\'instant. Ajoute le premier élément ci-dessus.</p>')}
 function home(){const tk=L('task').filter(x=>!x.done).length,sh=L('shop').filter(x=>!x.done).length,
  nx=L('count').filter(x=>days(x.date)>=0).sort((a,b)=>a.date>b.date?1:-1)[0],lo=L('loan')[0],paid=L('pay').reduce((s,x)=>s+ +x.amount,0),pc=lo&&+lo.total?Math.min(100,paid/lo.total*100):0;
+ const ns=S.items.filter(i=>i.t==='shift'&&i.date>=today).sort((a,b)=>a.date>b.date?1:-1)[0];
  return `<h2>Bonjour 👋</h2><div class="grid">
 <div class="card big" onclick="go('task')"><small>Tâches</small><span class="n">${tk}</span><span>${tk>1?'à faire':'à faire'}</span></div>
 <div class="card" onclick="go('shop')"><small>Courses</small><span class="n">${sh}</span><small>article${sh>1?'s':''}</small></div>
 <div class="card" onclick="go('count')"><small>Prochaine date</small><b>${nx?esc(nx.title):'—'}</b><span>${nx?'J-'+days(nx.date):''}</span></div>
 <div class="card" onclick="go('loan')"><small>Remboursement</small><b>${Math.round(pc)} %</b><div class="bar"><i style="width:${pc}%"></i></div></div>
+<div class="card" style="grid-column:span 2" onclick="go('plan')"><small>Prochain poste</small><b>${ns?esc(ns.titre):'Aucun poste à venir'}</b><span>${ns?fd(ns.date)+' · '+ns.debut+' → '+ns.fin:''}</span></div>
 <div class="card" onclick="go('tools')"><small>Boîte à outils</small><b>🧰</b><small>minuteur, décideur…</small></div></div>`}
 function loan(){const lo=L('loan')[0]||{},paid=L('pay').reduce((s,x)=>s+ +x.amount,0),left=Math.max(0,(+lo.total||0)-paid),pc=+lo.total?Math.min(100,paid/lo.total*100):0;
  let nx='';if(lo.day){const d=new Date(),n=new Date(d.getFullYear(),d.getMonth(),+lo.day);if(n<new Date(d.setHours(0,0,0,0)))n.setMonth(n.getMonth()+1);nx=`<small>Prochaine échéance : ${n.toLocaleDateString('fr-FR')}</small>`}
@@ -130,7 +135,29 @@ function conv(){const v=parseFloat($('#cv').value);$('#co').textContent=isNaN(v)
 function set(){return `<h2>⚙️ Réglages</h2><div class="card"><h3>Synchronisation</h3>${!FB?'<small>Mode local : les données restent sur cet appareil. Ajoute ta config Firebase en haut du fichier pour synchroniser.</small>':user?`<p>Connecté : ${esc(user.email)}</p><button class="btn alt" onclick="firebase.auth().signOut()">Se déconnecter</button>`:'<button class="btn" onclick="login()">Connexion avec Google</button>'}</div>
 <div class="card"><h3>Courses partagées</h3><small>Entre le même code chez chaque personne (choisis-en un long, il sert de mot de passe).</small><input id="cd" value="${esc(S.code)}" placeholder="Code de partage"><button class="btn" onclick="setCode()">Enregistrer le code</button></div>
 <div class="card"><h3>Sauvegarde</h3><button class="btn" onclick="exp()">Exporter en JSON</button><input type="file" accept=".json" onchange="imp(this)"><small>Choisis un fichier exporté pour restaurer tes données.</small></div>`}
+// ---- planning de travail
+let pm={y:new Date().getFullYear(),m:new Date().getMonth()+1},pd=null,pim=null;
+const P=window.Planning,mk=(y,m)=>y+'-'+String(m).padStart(2,'0'),sc=s=>s=='Soins intensifs'?'SI':s;
+const shifts=(y,m)=>S.items.filter(i=>i.t==='shift'&&i.date.startsWith(mk(y,m)+'-')).sort((a,b)=>a.date>b.date?1:-1);
+function pmove(n){pm.m+=n;if(pm.m>12){pm.m=1;pm.y++}if(pm.m<1){pm.m=12;pm.y--}pd=null;render()}
+function pday(d){pd=pd==d?null:d;render()}
+function psave(d){const c=$('#pc').value,old=S.items.find(i=>i.id==='shift-'+d);pd=null;if(!c){old?del(old.id):render();return}put({id:'shift-'+d,t:'shift',ts:Date.now(),...P.shiftFrom(d,c)})}
+function pdecode(){const t=$('#pt').value;pim={text:t,year:+$('#py').value,res:null};pim.res=P.decode(t,{year:pim.year});render()}
+function pvalid(){const r=pim.res,k=mk(r.year,r.month)+'-',ids=new Set(r.shifts.map(s=>'shift-'+s.date));
+ S.items.filter(i=>i.t==='shift'&&i.date.startsWith(k)&&!ids.has(i.id)).forEach(i=>push(i,1));
+ S.items=S.items.filter(i=>!(i.t==='shift'&&i.date.startsWith(k)));
+ r.shifts.forEach(s=>{const it={id:'shift-'+s.date,t:'shift',ts:Date.now(),...s};S.items.push(it);push(it)});
+ pm={y:r.year,m:r.month};pim=null;save();render()}
+function pimp(){const r=pim.res;
+ if(!r||!r.ok)return `<h2>🗓 Importer mon planning</h2><div class="card"><textarea id="pt" placeholder="Novembre RH J3 RH N3 N3…" style="min-height:120px">${esc(pim.text)}</textarea><input id="py" type="number" value="${pim.year}" aria-label="Année"><small>Année utilisée si elle n'est pas écrite dans le texte. Un tiret « - » = jour sans information.</small><br><button class="btn" onclick="pdecode()">Décoder</button><button class="btn alt" onclick="pim=null;render()">Annuler</button></div>`+(r?`<div class="card"><h3>À corriger</h3>${r.errors.map(e=>`<p>⚠️ ${esc(e.message)}</p>`).join('')}</div>`:'');
+ return `<h2>🗓 Vérification</h2><div class="card"><h3>${P.MOIS[r.month-1]} ${r.year} · ${r.shifts.length} poste${r.shifts.length>1?'s':''}</h3><table style="width:100%;border-collapse:collapse"><tr><th align="left">Jour</th><th align="left">Code</th><th align="left">Poste</th></tr>${r.days.map(d=>`<tr style="${d.kind=='travail'?'font-weight:600':'color:var(--mu)'}"><td>${fd(d.date)}</td><td>${d.code}</td><td>${esc(d.label)}</td></tr>`).join('')}</table></div><small>Valider remplace les postes déjà enregistrés pour ce mois.</small><br><button class="btn" onclick="pvalid()">Valider le planning</button><button class="btn alt" onclick="pim.res=null;render()">Modifier</button>`}
+function plan(){if(pim)return pimp();
+ const{y,m}=pm,n=P.daysIn(y,m),off=(new Date(Date.UTC(y,m-1,1)).getUTCDay()+6)%7,sh=shifts(y,m),by=Object.fromEntries(sh.map(s=>[s.date,s]));
+ let g=['L','M','M','J','V','S','D'].map(d=>`<small class="dw">${d}</small>`).join('')+'<i></i>'.repeat(off);
+ for(let d=1;d<=n;d++){const dt=mk(y,m)+'-'+String(d).padStart(2,'0'),s=by[dt];g+=`<div class="cd ${s?s.type:''} ${dt==today?'td':''} ${dt==pd?'sel':''}" onclick="pday('${dt}')"><b>${d}</b>${s?`<span>${s.code}</span><small>${esc(sc(s.secteur))}</small>`:''}</div>`}
+ const s0=by[pd],ed=pd?`<div class="card"><h3>${fd(pd)}</h3><select id="pc"><option value="">Aucun poste (repos)</option>${Object.entries(P.CODES).map(([c,v])=>`<option value="${c}" ${s0&&s0.code==c?'selected':''}>${v.titre}</option>`).join('')}</select><button class="btn" onclick="psave('${pd}')">Enregistrer</button><button class="btn alt" onclick="pday('${pd}')">Fermer</button></div>`:'';
+ return `<h2>🗓 Planning</h2><div class="card"><div class="pn"><button class="btn alt" onclick="pmove(-1)" aria-label="Mois précédent">‹</button><h3>${P.MOIS[m-1]} ${y}</h3><button class="btn alt" onclick="pmove(1)" aria-label="Mois suivant">›</button></div><div class="cal">${g}</div><small>Touche un jour pour ajouter, changer ou supprimer un poste.</small></div>${ed}<button class="btn" onclick="pim={text:'',year:pm.y,res:null};render()">Importer mon planning</button><h3 style="margin-top:12px">Postes du mois (${sh.length})</h3>${sh.map(s=>`<div class="row"><div class="g"><b>${fd(s.date)} · ${esc(s.titre)}</b><small>${s.debut} → ${s.finLeLendemain?fd(s.finDate)+' ':''}${s.fin} · rappel à ${s.rappel}</small></div><span class="chip">${s.type=='nuit'?'🌙':'☀️'} ${s.code}</span></div>`).join('')||'<p class="mu">Aucun poste ce mois-ci.</p>'}`}
 function search(){const a=S.items.filter(i=>['title','text','url'].some(k=>String(i[k]||'').toLowerCase().includes(q))&&T[i.t]);return `<h2>Résultats</h2>`+(a.map(row).join('')||'<p class="mu">Aucun résultat.</p>')}
-function render(){$('#app').innerHTML=q?search():({home,loan,tools,set}[tab]||(()=>list(tab)))();document.querySelectorAll('nav a').forEach(a=>a.classList.toggle('on',a.dataset.t==tab))}
+function render(){$('#app').innerHTML=q?search():({home,loan,tools,set,plan}[tab]||(()=>list(tab)))();document.querySelectorAll('nav a').forEach(a=>a.classList.toggle('on',a.dataset.t==tab))}
 render();
 </script></body></html>
