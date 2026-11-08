@@ -3,6 +3,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="theme-color" content="#5b4bdb">
 <title>Mon Hub</title>
+<link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-192.png"><meta name="apple-mobile-web-app-title" content="Mon Hub">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
 :root{--bg1:#f3f0ff;--bg2:#e3f6f1;--card:rgba(255,255,255,.62);--bd:rgba(255,255,255,.85);--tx:#1c1a2e;--mu:#6a6782;--ac:#5b4bdb;--ac2:#0fa89a;--in:rgba(255,255,255,.7)}
@@ -37,10 +38,14 @@ nav a{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;font-s
 #sh{display:none;position:fixed;inset:0;background:#0007;z-index:9;align-items:flex-end}#sh.on{display:flex}#sh .card{width:100%;max-width:760px;margin:0 auto;border-radius:26px 26px 0 0;background:var(--bg1);padding-bottom:calc(20px + env(safe-area-inset-bottom))}
 .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:8px}.cal>*{min-width:0}.dw{text-align:center}.pn{display:flex;align-items:center;justify-content:space-between}.pn .btn{margin:0}.pn h3{margin:0}
 .cd{aspect-ratio:1;border-radius:12px;background:var(--in);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1;font-size:.7rem;cursor:pointer}.cd span{font-weight:800;font-size:.9rem}.cd small{font-size:.6rem}.cd.jour{background:#f5b94250}.cd.nuit{background:#5b4bdb45}.cd.td{outline:2px solid var(--ac2)}.cd.sel{outline:2px solid var(--ac)}
+.gh{margin:14px 0 6px;color:var(--mu);font-size:.95rem}#st{display:block;color:var(--mu);font-size:.8rem}
+.chip.late{background:#ef444444}.chip.soon{background:#f59e0b44}body.fl::after{content:'';position:fixed;inset:0;background:#f43f5e99;pointer-events:none;z-index:20}
+.cd.rc{box-shadow:inset 0 0 0 2px #22c55e99}#tt{display:none;position:fixed;left:50%;transform:translateX(-50%);bottom:calc(150px + env(safe-area-inset-bottom));z-index:8;background:var(--tx);color:var(--bg1);padding:10px 16px;border-radius:99px;gap:12px;align-items:center}#tt.on{display:flex}#tt button{border:0;background:none;color:inherit;font:inherit;font-weight:800;text-decoration:underline;cursor:pointer}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style></head><body>
-<header><h1>Mon Hub</h1><input id="q" type="search" placeholder="Rechercher partout…" oninput="q=this.value.trim().toLowerCase();render()"></header>
+<header><h1>Mon Hub</h1><small id="st" onclick="go('set')" style="cursor:pointer"></small><input id="q" type="search" placeholder="Rechercher partout…" oninput="q=this.value.trim().toLowerCase();render()"></header>
 <main id="app"></main><nav id="nav"></nav>
+<div id="tt" role="status"></div>
 <button id="fab" onclick="sh.classList.add('on');ft.focus()" aria-label="Ajout rapide">+</button>
 <div id="sh" onclick="if(event.target==sh)sh.classList.remove('on')"><div class="card"><h3>Ajout rapide</h3>
 <select id="fs"><option value="task">✅ Tâche</option><option value="shop">🛒 Course</option><option value="note">📝 Note</option><option value="idea">💡 Idée</option><option value="wish">🎁 Envie</option></select>
@@ -57,24 +62,24 @@ const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"]/g,c=>(
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const today=new Date().toISOString().slice(0,10);
 let S=JSON.parse(localStorage.hub||'{"items":[],"code":""}'),tab='home',q='',user=null,db=null,R={p:[],s:[],sh:[]},unsub=[];
-if(!S.seeded){S.seeded=1;[['Cave à vin','https://durandkelianfac-bit.github.io/Cave-vin/'],['Carnet de cuisine','https://durandkelianfac-bit.github.io/Carnet-de-cuisine/']].forEach(([title,url])=>S.items.push({id:uid(),t:'site',title,url,ts:Date.now()}));localStorage.hub=JSON.stringify(S)}
+if(!S.seeded){S.seeded=1;[['Cave à vin','https://durandkelianfac-bit.github.io/Cave-vin/'],['Carnet de cuisine','https://durandkelianfac-bit.github.io/Carnet-de-cuisine/']].forEach(([title,url])=>S.items.push({id:'seed-'+title.replace(/\W/g,''),t:'site',title,url,ts:Date.now()}));localStorage.hub=JSON.stringify(S)}
 const save=()=>localStorage.hub=JSON.stringify(S);
 const L=t=>S.items.filter(i=>i.t===t);
 const days=d=>Math.ceil((new Date(d)-new Date().setHours(0,0,0,0))/864e5);
 const eur=n=>(+n||0).toLocaleString('fr-FR',{style:'currency',currency:'EUR'});
 const fd=d=>new Date(d).toLocaleDateString('fr-FR');
 const T={
- task:{n:'Tâches',i:'✅',ph:'Nouvelle tâche',f:[['due','date']],chk:1},
+ task:{n:'Tâches',i:'✅',ph:'Nouvelle tâche',f:[['due','date','','À faire avant le (facultatif)']],chk:1},
  shop:{n:'Courses',i:'🛒',ph:'Ajouter un article',chk:1},
  site:{n:'Mes sites',i:'🔗',ph:'Nom du site',f:[['url','url','https://…']]},
  note:{n:'Notes',i:'📝',ph:'Titre',f:[['text','area','Contenu…']]},
  idea:{n:'Idées',i:'💡',ph:'Nouvelle idée',f:[['text','area','Détails…']]},
  wish:{n:'Envies',i:'🎁',ph:'Article',f:[['url','url','Lien'],['price','number','Prix (€)']],chk:1},
- count:{n:'Dates',i:'⏳',ph:'Événement',f:[['date','date']]}
+ count:{n:'Dates',i:'⏳',ph:'Événement',f:[['date','date','','Date']]}
 };
 const TABS=[['home','🏠','Accueil'],['task','✅','Tâches'],['plan','🗓','Planning'],['shop','🛒','Courses'],['site','🔗','Sites'],['note','📝','Notes'],['idea','💡','Idées'],['wish','🎁','Envies'],['loan','💶','Prêt'],['count','⏳','Dates'],['tools','🧰','Outils'],['set','⚙️','Réglages']];
 $('#nav').innerHTML=TABS.map(([t,i,n])=>`<a data-t="${t}" onclick="go('${t}')"><span>${i}</span>${n}</a>`).join('');
-const go=t=>{tab=t;q='';$('#q').value='';render();scrollTo(0,0)};
+const go=t=>{tab=t;q='';ed=null;$('#q').value='';render();scrollTo(0,0)};
 // ---- données & synchro
 function col(it){return it.t==='shop'&&S.code?db.collection('shared').doc(S.code).collection('items'):db.collection('users').doc(user.uid).collection('items')}
 function push(it,rm){if(!db||!user)return;try{const d=col(it).doc(it.id);rm?d.delete():d.set(it)}catch(e){}if(it.t==='shift')pshare(it,rm)}
@@ -83,50 +88,82 @@ function pshare(it,rm,force){if(!db||!user||!S.code||!(S.sharePlan||force))retur
 function setShare(){S.name=$('#nm').value.trim();const was=S.sharePlan;S.sharePlan=$('#sp').checked;save();
  S.items.filter(i=>i.t==='shift').forEach(i=>S.sharePlan?pshare(i):was&&pshare(i,1,1));render()}
 function put(it){const i=S.items.findIndex(x=>x.id===it.id);i<0?S.items.push(it):S.items[i]=it;save();push(it);render()}
-function del(id){const it=S.items.find(x=>x.id===id);S.items=S.items.filter(x=>x.id!==id);save();if(it)push(it,1);render()}
-function merge(){const ids=new Set();S.items=[...R.p,...R.s].filter(i=>!ids.has(i.id)&&ids.add(i.id));save();render()}
+let ul=[],ut;
+function del(id){const it=S.items.find(x=>x.id===id);S.items=S.items.filter(x=>x.id!==id);save();if(it){push(it,1);ul.push(it);clearTimeout(ut);ut=setTimeout(()=>{ul=[];$('#tt').classList.remove('on')},6000);$('#tt').innerHTML='Supprimé <button onclick="undo()">Annuler</button>';$('#tt').classList.add('on')}render()}
+function undo(){const a=ul;ul=[];$('#tt').classList.remove('on');a.forEach(it=>{S.items.push(it);push(it)});save();render()}
+function merge(){const ids=new Set();S.items=[...R.p,...R.s].filter(i=>{const k=i.t==='site'?'s:'+i.url:i.id;return!ids.has(k)&&ids.add(k)});save();render()}
 function sub(){unsub.forEach(f=>f());unsub=[];if(!db||!user)return;
- unsub.push(db.collection('users').doc(user.uid).collection('items').onSnapshot(s=>{R.p=s.docs.map(d=>d.data());if(!R.p.length&&!R.init&&S.items.length){R.init=1;S.items.forEach(i=>push(i))}merge()}));
+ unsub.push(db.collection('users').doc(user.uid).collection('items').onSnapshot(s=>{R.p=s.docs.map(d=>d.data());if(!R.init){R.init=1;const ids=new Set(R.p.map(i=>i.id));S.items.filter(i=>!ids.has(i.id)&&!(i.t==='shop'&&S.code)).forEach(i=>{push(i);R.p.push(i)})}merge()}));
  if(S.code){unsub.push(db.collection('shared').doc(S.code).collection('items').onSnapshot(s=>{R.s=s.docs.map(d=>d.data());merge()}));unsub.push(db.collection('shared').doc(S.code).collection('shifts').onSnapshot(s=>{R.sh=s.docs.map(d=>d.data());render()}))}}
 if(FB&&window.firebase){firebase.initializeApp(FB);db=firebase.firestore();db.enablePersistence({synchronizeTabs:true}).catch(()=>{});firebase.auth().onAuthStateChanged(u=>{user=u;sub();render()})}
 const login=()=>firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>alert(e.message));
 // ---- actions
-function add(e,t){e.preventDefault();const it={id:uid(),t,ts:Date.now()};for(const[k,v]of new FormData(e.target).entries())it[k]=v;if(T[t].chk)it.done=false;put(it)}
-function tog(id){const it=S.items.find(x=>x.id===id);it.done=!it.done;put(it)}
+function add(e,t){e.preventDefault();const it={id:uid(),t,ts:Date.now()};for(const[k,v]of new FormData(e.target).entries())it[k]=v;if(T[t].chk)it.done=false;if(t=='shop'&&!it.aisle)it.aisle=aisle(it.title);put(it);if(t=='shop')bump(it)}
+function tog(id){const it=S.items.find(x=>x.id===id);it.done=!it.done;put(it);
+ if(it.done&&it.t==='task'&&it.rec){const d=new Date((it.due&&it.due>today?it.due:today)+'T00:00:00');if(it.rec=='d')d.setDate(d.getDate()+1);else if(it.rec=='w')d.setDate(d.getDate()+7);else d.setMonth(d.getMonth()+1);const p=n=>String(n).padStart(2,'0');put({...it,id:uid(),done:false,due:d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()),ts:Date.now()})}}
+function bump(it){const c=cfg(),f={...(c.freq||{})},t=it.title.trim(),k=t.toLowerCase().replace(/[^a-z0-9àâçéèêëîïôûùüÿœ ]/g,'')||'x'+t.length,o=f[k]||{n:0};f[k]={n:o.n+1,t,a:it.aisle};put({...c,freq:f,ts:Date.now()})}
+let SG=[];function sugg(i){const x=SG[i],it={id:uid(),t:'shop',title:x.t,done:false,aisle:x.a||aisle(x.t),ts:Date.now()};put(it);bump(it)}
 function clearDone(){L('shop').filter(x=>x.done).forEach(x=>del(x.id))}
-function quick(){const v=ft.value.trim();if(!v)return;const t=fs.value,it={id:uid(),t,title:v,ts:Date.now()};if(T[t].chk)it.done=false;put(it);ft.value='';sh.classList.remove('on')}
-function setLoan(e){e.preventDefault();const f=Object.fromEntries(new FormData(e.target));put({id:'loan',t:'loan',...f})}
-function pay(a,d){put({id:uid(),t:'pay',amount:a,date:d||today,ts:Date.now()})}
-function payF(e){e.preventDefault();const f=new FormData(e.target);pay(f.get('amount'),f.get('date'))}
+function quick(){const v=ft.value.trim();if(!v)return;const t=fs.value,it={id:uid(),t,title:v,ts:Date.now()};if(T[t].chk)it.done=false;if(t=='shop')it.aisle=aisle(v);put(it);if(t=='shop')bump(it);ft.value='';sh.classList.remove('on')}
+function setLoan(e){e.preventDefault();const f=Object.fromEntries(new FormData(e.target));put({...(L('loan').find(x=>x.id==f.id)||{}),...f,t:'loan'})}
+function pay(a,d,l){put({id:uid(),t:'pay',loan:l,amount:a,date:d||today,ts:Date.now()})}
+function payF(e,l){e.preventDefault();const f=new FormData(e.target);pay(f.get('amount'),f.get('date'),l)}
+function newLoan(){const t=prompt('Nom du suivi ?');if(t){const l={id:uid(),t:'loan',title:t,ts:Date.now()};ls=l.id;put(l)}}
+function pinLoan(id,on){put({...L('loan').find(x=>x.id==id),pin:on})}
+function delLoan(id){if(confirm('Supprimer ce suivi et son historique ?')){L('pay').filter(x=>(x.loan||'loan')==id).forEach(x=>del(x.id));del(id);ls=null}}
 function setCode(){S.code=cd.value.trim();save();R.s=[];sub();render()}
 function exp(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(S,null,1)],{type:'application/json'}));a.download='hub-sauvegarde-'+today+'.json';a.click()}
 function imp(el){const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(!Array.isArray(d.items))throw 0;const m=new Map(S.items.map(i=>[i.id,i]));d.items.forEach(i=>m.set(i.id,i));S.items=[...m.values()];save();S.items.forEach(i=>push(i));render();alert('Import terminé')}catch(e){alert('Fichier invalide')}};r.readAsText(el.files[0])}
 // ---- vues
-function row(i){const c=T[i.t]||{};let m='';
- if(i.due)m=fd(i.due);if(i.price)m=eur(i.price);if(i.date)m=days(i.date)>=0?'J-'+days(i.date):'passé';
- const u=/^https?:\/\//.test(i.url||'')?`<a href="${esc(i.url)}" target="_blank" rel="noopener">${esc(i.url.replace(/^https?:\/\//,''))}</a>`:'';
- return `<div class="row ${i.done?'done':''}">${c.chk?`<input type="checkbox" ${i.done?'checked':''} onchange="tog('${i.id}')">`:''}<div class="g"><b>${q?(c.i||'')+' ':''}${esc(i.title)}</b>${i.text?`<small>${esc(i.text)}</small>`:''}${u}</div>${m?`<span class="chip">${m}</span>`:''}<button class="x" onclick="del('${i.id}')" aria-label="Supprimer">✕</button></div>`}
-function list(t){const c=T[t];let h=`<h2>${c.i} ${c.n}</h2><div class="card"><form onsubmit="add(event,'${t}')"><input name="title" placeholder="${c.ph}" required>`;
- (c.f||[]).forEach(([k,ty,ph])=>h+=ty=='area'?`<textarea name="${k}" placeholder="${ph}"></textarea>`:`<input name="${k}" type="${ty}" ${ph?`placeholder="${ph}"`:''} ${ty=='number'?'step="0.01"':''} ${t=='count'?'required':''}>`);
- h+=`<button class="btn">Ajouter</button>${t=='shop'?'<button type="button" class="btn alt" onclick="clearDone()">Vider les cochés</button>':''}</form></div>`;
- const a=L(t).sort((x,y)=>t=='count'?(x.date>y.date?1:-1):(x.done-y.done)||(t=='task'&&x.due&&y.due?(x.due>y.due?1:-1):y.ts-x.ts));
- return h+(a.map(row).join('')||'<p class="mu">Rien ici pour l\'instant. Ajoute le premier élément ci-dessus.</p>')}
-function home(){const tk=L('task').filter(x=>!x.done).length,sh=L('shop').filter(x=>!x.done).length,
- nx=L('count').filter(x=>days(x.date)>=0).sort((a,b)=>a.date>b.date?1:-1)[0],lo=L('loan')[0],paid=L('pay').reduce((s,x)=>s+ +x.amount,0),pc=lo&&+lo.total?Math.min(100,paid/lo.total*100):0;
- const ns=S.items.filter(i=>i.t==='shift'&&i.date>=today).sort((a,b)=>a.date>b.date?1:-1)[0];
- return `<h2>Bonjour 👋</h2><div class="grid">
-<div class="card big" onclick="go('task')"><small>Tâches</small><span class="n">${tk}</span><span>${tk>1?'à faire':'à faire'}</span></div>
-<div class="card" onclick="go('shop')"><small>Courses</small><span class="n">${sh}</span><small>article${sh>1?'s':''}</small></div>
-<div class="card" onclick="go('count')"><small>Prochaine date</small><b>${nx?esc(nx.title):'—'}</b><span>${nx?'J-'+days(nx.date):''}</span></div>
-<div class="card" onclick="go('loan')"><small>Remboursement</small><b>${Math.round(pc)} %</b><div class="bar"><i style="width:${pc}%"></i></div></div>
-<div class="card" style="grid-column:span 2" onclick="go('plan')"><small>Prochain poste</small><b>${ns?esc(ns.titre):'Aucun poste à venir'}</b><span>${ns?fd(ns.date)+' · '+ns.debut+' → '+ns.fin:''}</span></div>
-<div class="card" onclick="go('tools')"><small>Boîte à outils</small><b>🧰</b><small>minuteur, décideur…</small></div></div>`}
-function loan(){const lo=L('loan')[0]||{},paid=L('pay').reduce((s,x)=>s+ +x.amount,0),left=Math.max(0,(+lo.total||0)-paid),pc=+lo.total?Math.min(100,paid/lo.total*100):0;
+const DEF=['Fruits et légumes','Boulangerie et pâtisserie','Boucherie et poissonnerie','Charcuterie et traiteur','Crèmerie','Épicerie salée','Épicerie sucrée et petit-déj','Boissons','Surgelés','Hygiène et beauté','Entretien et maison','Autres'];
+const AI=[['Surgelés','surgel|glace|pizza|frites|nugget|poisson pané'],['Hygiène et beauté','shampo|savon|dentifrice|brosse à dents|déodorant|gel douche|coton|rasoir|crème solaire|mouchoir|tampon|papier toilette|papier wc|essuie'],['Entretien et maison','lessive|liquide vaisselle|éponge|sac poubelle|javel|nettoyant|adoucissant|pastille|sopalin|papier alu|film|ampoule|pile'],['Boissons','jus|eau|soda|coca|bière|vin(?![a-zà-ÿ])|sirop|limonade|boisson|champagne|cidre'],['Boucherie et poissonnerie','poulet|boeuf|bœuf|steak|viande|porc|veau|agneau|dinde|haché|saumon|poisson|crevette|thon|cabillaud|merlu|escalope|côte|rôti|aile'],['Charcuterie et traiteur','jambon|saucisson|lardon|chorizo|pâté|rillette|bacon|saucisse|traiteur|knack'],['Fruits et légumes','pomme|banane|orange|citron|poire|fraise|framboise|raisin|tomate|salade|laitue|carotte|courgette|oignon|ail(?![a-zà-ÿ])|poireau|champignon|concombre|poivron|aubergine|brocoli|chou|avocat|fruit|légume|persil|basilic|clémentine|kiwi|mangue|ananas|melon|patate|échalote|épinard|radis|céleri|courge'],['Crèmerie','lait|yaourt|yogourt|fromage|beurre|crème|oeuf|œuf|emmental|mozzarella|skyr|gruyère|parmesan|chèvre|camembert|faisselle'],['Boulangerie et pâtisserie','pain|baguette|brioche|croissant|viennoiserie|gâteau|tarte|brownie|muffin'],['Épicerie sucrée et petit-déj','sucre|chocolat|biscuit|céréale|confiture|miel|café|thé|nutella|pâte à tartiner|compote|bonbon|muesli|cacao|crêpe|gaufre'],['Épicerie salée','pâte|riz|farine|huile|vinaigre|sel|poivre|épice|conserve|sauce|moutarde|ketchup|mayonnaise|lentille|haricot|pois|semoule|quinoa|soupe|bouillon|chips|cacahuète|olive|cornichon|maïs']];
+const aisle=t=>{const s=String(t).toLowerCase();for(const[a,p]of AI)if(new RegExp('(^|[^a-zà-ÿœ])('+p+')','i').test(s))return a;return'Autres'};
+const cfg=()=>L('cfg')[0]||{id:'cfg',t:'cfg'};
+const order=()=>{const c=cfg().aisles||[];return[...c.filter(a=>DEF.includes(a)),...DEF.filter(a=>!c.includes(a))]};
+function mvA(i,d){const o=order(),j=i+d;if(j<0||j>=o.length)return;[o[i],o[j]]=[o[j],o[i]];put({...cfg(),aisles:o,ts:Date.now()})}
+let ed=null,ord=0;
+function edit(id){ed=ed==id?null:id;render();scrollTo(0,0)}
+function saveEdit(e,id){e.preventDefault();const it=S.items.find(x=>x.id==id);for(const[k,v]of new FormData(e.target).entries())it[k]=v;if(it.t=='shop'&&!it.aisle)it.aisle=aisle(it.title);ed=null;put(it)}
+function row(i){const c=T[i.t]||{};let m='',cl='';
+ if(i.due){const d=days(i.due);if(i.done)m=fd(i.due);else{m=d<0?'en retard · '+fd(i.due):d==0?"aujourd'hui":d==1?'demain':fd(i.due);cl=d<0?'late':d<=1?'soon':''}}
+ if(i.price)m=eur(i.price);if(i.date)m=days(i.date)>=0?'J-'+days(i.date):'passé';
+ const u=/^https?:\/\//.test(i.url||'')?`<a href="${esc(i.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${esc(i.url.replace(/^https?:\/\//,''))}</a>`:'';
+ return `<div class="row ${i.done?'done':''}" data-id="${i.id}">${c.chk?`<input type="checkbox" ${i.done?'checked':''} onchange="tog('${i.id}')">`:''}<div class="g" onclick="edit('${i.id}')" style="cursor:pointer"><b>${q?(c.i||'')+' ':''}${esc(i.title)}${i.rec?' 🔁':''}</b>${i.text?`<small>${esc(i.text)}</small>`:''}${u}</div>${m?`<span class="chip ${cl}">${m}</span>`:''}<button class="x" onclick="del('${i.id}')" aria-label="Supprimer">✕</button></div>`}
+function ff(t,it){it=it||{};const c=T[t];let h=`<input name="title" placeholder="${c.ph}" value="${esc(it.title)}" required>`;
+ (c.f||[]).forEach(([k,ty,ph,lb])=>{const v=esc(it[k]);h+=(lb?`<small>${lb}</small>`:'')+(ty=='area'?`<textarea name="${k}" placeholder="${ph}">${v}</textarea>`:`<input name="${k}" type="${ty}" ${ph?`placeholder="${ph}"`:''} value="${v}" ${ty=='number'?'step="0.01"':''} ${t=='count'?'required':''}>`)});
+ if(t=='task')h+=`<select name="rec" aria-label="Répétition">${[['','Pas de répétition'],['d','Chaque jour'],['w','Chaque semaine'],['m','Chaque mois']].map(([v,n])=>`<option value="${v}" ${v==(it.rec||'')?'selected':''}>${n}</option>`).join('')}</select>`;
+ if(t=='shop')h+=`<select name="aisle" aria-label="Rayon"><option value="">Rayon : automatique</option>${order().map(a=>`<option ${a==it.aisle?'selected':''}>${a}</option>`).join('')}</select>`;
+ return h}
+const grp=(a,kf,ks)=>ks.map(k=>{const r=a.filter(x=>kf(x)==k);return r.length?`<h3 class="gh">${k}</h3>`+r.map(row).join(''):''}).join('');
+function list(t){const c=T[t],ei=ed&&S.items.find(x=>x.id==ed&&x.t==t);let h=`<h2>${c.i} ${c.n}</h2>`;
+ h+=ei?`<div class="card"><h3>Modifier</h3><form onsubmit="saveEdit(event,'${ei.id}')">${ff(t,ei)}<button class="btn">Enregistrer</button><button type="button" class="btn alt" onclick="edit('${ei.id}')">Annuler</button></form></div>`:`<div class="card"><form onsubmit="add(event,'${t}')">${ff(t)}<button class="btn">Ajouter</button>${t=='shop'?'<button type="button" class="btn alt" onclick="clearDone()">Vider les cochés</button><button type="button" class="btn alt" onclick="ord=!ord;render()">⚙ Ordre des rayons</button>':''}</form></div>`;
+ if(t=='shop'&&!ei){SG=Object.values(cfg().freq||{}).filter(x=>!L('shop').some(i=>!i.done&&i.title.toLowerCase()==x.t.toLowerCase())).sort((a,b)=>b.n-a.n).slice(0,8);if(SG.length)h+=`<small>Souvent achetés :</small><div style="display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 12px">${SG.map((x,i)=>`<button class="chip" style="border:0;cursor:pointer;color:inherit;font:inherit" onclick="sugg(${i})">+ ${esc(x.t)}</button>`).join('')}</div>`}
+ if(t=='shop'&&ord)h+=`<div class="card"><h3>Ordre des rayons</h3>${order().map((a,i)=>`<div class="row"><div class="g"><b>${a}</b></div><button class="x" onclick="mvA(${i},-1)" aria-label="Monter">▲</button><button class="x" onclick="mvA(${i},1)" aria-label="Descendre">▼</button></div>`).join('')}</div>`;
+ const a=L(t);let b;
+ if(t=='task'){const kf=x=>{if(x.done)return'Terminées';if(!x.due)return'Sans date';const d=days(x.due);return d<0?'En retard':d==0?"Aujourd'hui":d<=7?'Cette semaine':'Plus tard'};a.sort((x,y)=>(x.due||'9')>(y.due||'9')?1:-1);b=grp(a,kf,['En retard',"Aujourd'hui",'Cette semaine','Plus tard','Sans date','Terminées'])}
+ else if(t=='shop'){a.sort((x,y)=>x.done-y.done);b=grp(a,x=>x.aisle||aisle(x.title),order())}
+ else b=a.sort((x,y)=>t=='count'?(x.date>y.date?1:-1):(x.done-y.done)||y.ts-x.ts).map(row).join('');
+ return h+(b||'<p class="mu">Rien ici pour l\'instant. Ajoute le premier élément ci-dessus.</p>')}
+const HC=[['today',"Aujourd'hui"],['task','Tâches'],['shop','Courses'],['plan','Prochain poste'],['count','Prochaine date'],['tools','Boîte à outils']];
+const homeOn=()=>cfg().home||HC.map(x=>x[0]);
+function setHome(k,on){const h=homeOn().filter(x=>x!=k);if(on)h.push(k);put({...cfg(),home:HC.map(x=>x[0]).filter(x=>h.includes(x)),ts:Date.now()})}
+function home(){const tk=L('task').filter(x=>!x.done).length,sh=L('shop').filter(x=>!x.done).length,nx=L('count').filter(x=>days(x.date)>=0).sort((a,b)=>a.date>b.date?1:-1)[0],ns=S.items.filter(i=>i.t==='shift'&&i.date>=today).sort((a,b)=>a.date>b.date?1:-1)[0];
+ const td=S.items.find(i=>i.t==='shift'&&i.date===today),fo=(R.sh||[]).filter(x=>user&&x.owner!==user.uid&&x.date===today),tu=L('task').filter(x=>!x.done&&x.due&&days(x.due)<=0).length;
+ const C={today:`<div class="card" style="grid-column:span 2" onclick="go('plan')"><small>Aujourd'hui · ${fd(today)}</small><b style="font-size:1.3rem">${td?esc(td.titre)+' · '+td.debut+' → '+td.fin:'Pas de poste aujourd\'hui'}</b>${fo.map(x=>`<span>${esc(x.name||'?')} : ${esc(x.titre)} (${x.debut} → ${x.fin})</span>`).join('')}<span>${tu?tu+' tâche'+(tu>1?'s':'')+' à faire aujourd\'hui ou en retard':'Aucune tâche urgente'}</span></div>`,task:`<div class="card big" onclick="go('task')"><small>Tâches</small><span class="n">${tk}</span><span>à faire</span></div>`,
+ shop:`<div class="card" onclick="go('shop')"><small>Courses</small><span class="n">${sh}</span><small>article${sh>1?'s':''}</small></div>`,
+ plan:`<div class="card" style="grid-column:span 2" onclick="go('plan')"><small>Prochain poste</small><b>${ns?esc(ns.titre):'Aucun poste à venir'}</b><span>${ns?fd(ns.date)+' · '+ns.debut+' → '+ns.fin:''}</span></div>`,
+ count:`<div class="card" onclick="go('count')"><small>Prochaine date</small><b>${nx?esc(nx.title):'—'}</b><span>${nx?'J-'+days(nx.date):''}</span></div>`,
+ tools:`<div class="card" onclick="go('tools')"><small>Boîte à outils</small><b>🧰</b><small>minuteur, décideur…</small></div>`};
+ const lo=L('loan').filter(l=>l.pin).map(l=>{const p=L('pay').filter(x=>(x.loan||'loan')==l.id).reduce((a,x)=>a+ +x.amount,0),pc=+l.total?Math.min(100,p/l.total*100):0;return `<div class="card" onclick="ls='${l.id}';go('loan')"><small>${esc(l.title||'Remboursement')}</small><b>${Math.round(pc)} %</b><div class="bar"><i style="width:${pc}%"></i></div></div>`}).join('');
+ return `<h2>Bonjour 👋</h2><div class="grid">${homeOn().map(k=>C[k]||'').join('')}${lo}</div>`}
+let ls=null;
+function loan(){const A=L('loan'),lo=A.find(x=>x.id==ls)||A[0],head=`<h2>💶 Remboursements</h2><div class="card">${A.length?`<select onchange="ls=this.value;render()" aria-label="Suivi">${A.map(l=>`<option value="${l.id}" ${lo&&l.id==lo.id?'selected':''}>${esc(l.title||'Remboursement')}</option>`).join('')}</select>`:'<p class="mu">Aucun suivi pour l\'instant.</p>'}<button class="btn" onclick="newLoan()">+ Nouveau suivi</button></div>`;
+ if(!lo)return head;const id=lo.id,ps=L('pay').filter(x=>(x.loan||'loan')==id),paid=ps.reduce((a,x)=>a+ +x.amount,0),left=Math.max(0,(+lo.total||0)-paid),pc=+lo.total?Math.min(100,paid/lo.total*100):0;
  let nx='';if(lo.day){const d=new Date(),n=new Date(d.getFullYear(),d.getMonth(),+lo.day);if(n<new Date(d.setHours(0,0,0,0)))n.setMonth(n.getMonth()+1);nx=`<small>Prochaine échéance : ${n.toLocaleDateString('fr-FR')}</small>`}
- return `<h2>💶 Remboursement</h2><div class="card"><span class="n">${eur(left)}</span><div class="mu">restants sur ${eur(lo.total)}</div><div class="bar"><i style="width:${pc}%"></i></div><small>${eur(paid)} remboursés (${Math.round(pc)} %)</small><br>${nx}</div>
-<div class="card"><h3>Nouveau virement</h3>${lo.monthly?`<button class="btn" onclick="pay(${+lo.monthly})">Mensualité de ${eur(lo.monthly)} effectuée</button>`:''}<form onsubmit="payF(event)"><input name="amount" type="number" step="0.01" placeholder="Montant libre (€)" required><input name="date" type="date" value="${today}"><button class="btn alt">Ajouter ce virement</button></form></div>
-<div class="card"><h3>Réglages</h3><form onsubmit="setLoan(event)"><input name="total" type="number" step="0.01" placeholder="Montant total à rembourser (€)" value="${lo.total||''}" required><input name="monthly" type="number" step="0.01" placeholder="Mensualité (€)" value="${lo.monthly||''}"><input name="day" type="number" min="1" max="31" placeholder="Jour du virement (1 à 31)" value="${lo.day||''}"><button class="btn">Enregistrer</button></form></div>
-<h3>Historique</h3>${L('pay').sort((a,b)=>a.date<b.date?1:-1).map(p=>`<div class="row"><div class="g"><b>${eur(p.amount)}</b></div><span class="chip">${fd(p.date)}</span><button class="x" onclick="del('${p.id}')" aria-label="Supprimer">✕</button></div>`).join('')||'<p class="mu">Aucun virement enregistré.</p>'}`}
+ return head+`<div class="card"><span class="n">${eur(left)}</span><div class="mu">restants sur ${eur(lo.total)}</div><div class="bar"><i style="width:${pc}%"></i></div><small>${eur(paid)} remboursés (${Math.round(pc)} %)</small><br>${nx}<label style="display:flex;gap:10px;align-items:center;margin-top:8px"><input type="checkbox" ${lo.pin?'checked':''} onchange="pinLoan('${id}',this.checked)"> Afficher sur l'accueil</label></div>
+<div class="card"><h3>Nouveau virement</h3>${lo.monthly?`<button class="btn" onclick="pay(${+lo.monthly},0,'${id}')">Mensualité de ${eur(lo.monthly)} effectuée</button>`:''}<form onsubmit="payF(event,'${id}')"><input name="amount" type="number" step="0.01" placeholder="Montant libre (€)" required><input name="date" type="date" value="${today}"><button class="btn alt">Ajouter ce virement</button></form></div>
+<div class="card"><h3>Réglages</h3><form onsubmit="setLoan(event)"><input type="hidden" name="id" value="${id}"><input name="title" placeholder="Nom du suivi" value="${esc(lo.title||'Remboursement')}" required><input name="total" type="number" step="0.01" placeholder="Montant total à rembourser (€)" value="${lo.total||''}" required><input name="monthly" type="number" step="0.01" placeholder="Mensualité (€)" value="${lo.monthly||''}"><input name="day" type="number" min="1" max="31" placeholder="Jour du virement (1 à 31)" value="${lo.day||''}"><button class="btn">Enregistrer</button><button type="button" class="btn alt" onclick="delLoan('${id}')">Supprimer ce suivi</button></form></div>
+<h3>Historique</h3>${ps.sort((a,b)=>a.date<b.date?1:-1).map(p=>`<div class="row"><div class="g"><b>${eur(p.amount)}</b></div><span class="chip">${fd(p.date)}</span><button class="x" onclick="del('${p.id}')" aria-label="Supprimer">✕</button></div>`).join('')||'<p class="mu">Aucun virement enregistré.</p>'}`}
 const CVU={ // valeur de base = v*a+b
 'Longueur':[['millimètre (mm)',.001],['centimètre (cm)',.01],['mètre (m)',1],['kilomètre (km)',1000],['pouce (in)',.0254],['pied (ft)',.3048],['yard (yd)',.9144],['mile (mi)',1609.344],['mille marin',1852]],
 'Masse':[['milligramme (mg)',1e-6],['gramme (g)',.001],['kilogramme (kg)',1],['tonne (t)',1000],['once (oz)',.028349523125],['livre (lb)',.45359237],['stone (st)',6.35029318]],
@@ -142,16 +179,22 @@ const cvo=(c,sel)=>CVU[c].map((u,i)=>`<option value="${i}" ${i==sel?'selected':'
 function cvCat(){const c=$('#cc').value;$('#ca').innerHTML=cvo(c,0);$('#cb').innerHTML=cvo(c,1);conv()}
 function cvSwap(){const a=$('#ca').value;$('#ca').value=$('#cb').value;$('#cb').value=a;conv()}
 function tools(){return `<h2>🧰 Boîte à outils</h2>
-<div class="card"><h3>⏱ Minuteur</h3><input id="tm" type="number" value="5" min="1"><button class="btn" onclick="timer()">Démarrer (minutes)</button><div class="n" id="td"></div></div>
+<div class="card"><h3>⏱ Minuteur</h3><div style="display:flex;gap:6px"><input id="th" type="number" min="0" placeholder="h" aria-label="Heures"><input id="tm" type="number" min="0" placeholder="min" aria-label="Minutes"><input id="ts" type="number" min="0" placeholder="s" aria-label="Secondes"></div><button class="btn" onclick="tstart()">Démarrer</button><button class="btn alt" onclick="stopT()">Arrêter</button><div>${[1,5,10,15,30].map(m=>`<button class="btn alt" onclick="timer(${m*60})">${m} min</button>`).join('')}</div><div class="n" id="td"></div></div>
 <div class="card"><h3>🎲 Décideur</h3><textarea id="dc" placeholder="Une option par ligne"></textarea><button class="btn" onclick="decide()">Tirer au sort</button><div class="n" id="dr" style="font-size:1.8rem"></div></div>
 <div class="card"><h3>🔄 Convertisseur</h3><select id="cc" onchange="cvCat()" aria-label="Catégorie">${Object.keys(CVU).map(c=>`<option>${c}</option>`).join('')}</select><input id="cv" type="number" step="any" placeholder="Valeur" oninput="conv()"><select id="ca" onchange="conv()" aria-label="Unité de départ">${cvo('Longueur',0)}</select><button class="btn alt" onclick="cvSwap()">⇅ Inverser</button><select id="cb" onchange="conv()" aria-label="Unité d'arrivée">${cvo('Longueur',1)}</select><div class="n" id="co" style="font-size:1.8rem"></div></div>`}
-let tmr;function timer(){clearInterval(tmr);let s=Math.round(+$('#tm').value*60);const up=()=>{const e=$('#td');if(e)e.textContent=Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};up();
- tmr=setInterval(()=>{s--;up();if(s<=0){clearInterval(tmr);navigator.vibrate&&navigator.vibrate([300,150,300]);alert('⏱ Minuteur terminé')}},1e3)}
+let tmr,ac,ring;
+function beep(){try{const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=880;g.gain.value=.3;o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+.25)}catch(e){}}
+function stopRing(){clearInterval(ring);document.body.classList.remove('fl')}
+function stopT(){clearInterval(tmr);stopRing();const e=$('#td');if(e)e.textContent=''}
+function timer(sec){if(!(sec>0))return;ac=ac||new(window.AudioContext||window.webkitAudioContext)();ac.resume&&ac.resume();clearInterval(tmr);stopRing();const end=Date.now()+sec*1e3;
+ const up=()=>{const r=Math.max(0,Math.ceil((end-Date.now())/1e3)),e=$('#td');if(e)e.textContent=[Math.floor(r/3600),Math.floor(r%3600/60),r%60].map(x=>String(x).padStart(2,'0')).join(':');if(r<=0){clearInterval(tmr);let n=0;ring=setInterval(()=>{beep();document.body.classList.toggle('fl');if(++n>40)stopRing()},500)}};up();tmr=setInterval(up,250)}
+function tstart(){const g=i=>+($(i).value)||0;timer(g('#th')*3600+g('#tm')*60+g('#ts'))}
 function decide(){const o=$('#dc').value.split('\n').map(x=>x.trim()).filter(Boolean);if(o.length<2)return;let n=0;const r=$('#dr'),iv=setInterval(()=>{r.textContent=o[Math.floor(Math.random()*o.length)];if(++n>18){clearInterval(iv);r.textContent='👉 '+r.textContent}},90)}
 function conv(){const v=parseFloat($('#cv').value),c=CVU[$('#cc').value],A=c[$('#ca').value],B=c[$('#cb').value];if(isNaN(v)){$('#co').textContent='';return}
  const base=v*A[1]+(A[2]||0),out=(base-(B[2]||0))/B[1];$('#co').textContent=(+out.toPrecision(10)).toLocaleString('fr-FR',{maximumFractionDigits:8})+' '+B[0].replace(/^.*\(([^)]+)\)$/,'$1')}
 function set(){return `<h2>⚙️ Réglages</h2><div class="card"><h3>Synchronisation</h3>${!FB?'<small>Mode local : les données restent sur cet appareil. Ajoute ta config Firebase en haut du fichier pour synchroniser.</small>':user?`<p>Connecté : ${esc(user.email)}</p><button class="btn alt" onclick="firebase.auth().signOut()">Se déconnecter</button>`:'<button class="btn" onclick="login()">Connexion avec Google</button>'}</div>
 <div class="card"><h3>Foyer partagé</h3><small>Même code chez chaque personne (choisis-en un long : il sert de mot de passe). Il partage les listes de courses, et ton planning si tu l'actives ci-dessous.</small><input id="cd" value="${esc(S.code)}" placeholder="Code du foyer"><button class="btn" onclick="setCode()">Enregistrer le code</button><input id="nm" value="${esc(S.name||((user&&user.displayName)||'').split(' ')[0])}" placeholder="Ton prénom affiché"><label style="display:flex;gap:10px;align-items:center;margin:6px 0"><input type="checkbox" id="sp" ${S.sharePlan?'checked':''} onchange="setShare()"> Partager mon planning avec le foyer</label><button class="btn alt" onclick="setShare()">Enregistrer mon prénom</button></div>
+<div class="card"><h3>Cartes de l'accueil</h3>${HC.map(([k,n])=>`<label style="display:flex;gap:10px;align-items:center;margin:6px 0"><input type="checkbox" ${homeOn().includes(k)?'checked':''} onchange="setHome('${k}',this.checked)"> ${n}</label>`).join('')}<small>Les remboursements s'épinglent depuis leur page.</small></div>
 <div class="card"><h3>Sauvegarde</h3><button class="btn" onclick="exp()">Exporter en JSON</button><input type="file" accept=".json" onchange="imp(this)"><small>Choisis un fichier exporté pour restaurer tes données.</small></div>`}
 // ---- planning de travail
 let pm={y:new Date().getFullYear(),m:new Date().getMonth()+1},pd=null,pim=null;
@@ -169,13 +212,18 @@ function pvalid(){const r=pim.res,k=mk(r.year,r.month)+'-',ids=new Set(r.shifts.
 function pimp(){const r=pim.res;
  if(!r||!r.ok)return `<h2>🗓 Importer mon planning</h2><div class="card"><textarea id="pt" placeholder="Novembre RH J3 RH N3 N3…" style="min-height:120px">${esc(pim.text)}</textarea><input id="py" type="number" value="${pim.year}" aria-label="Année"><small>Année utilisée si elle n'est pas écrite dans le texte. Un tiret « - » = jour sans information.</small><br><button class="btn" onclick="pdecode()">Décoder</button><button class="btn alt" onclick="pim=null;render()">Annuler</button></div>`+(r?`<div class="card"><h3>À corriger</h3>${r.errors.map(e=>`<p>⚠️ ${esc(e.message)}</p>`).join('')}</div>`:'');
  return `<h2>🗓 Vérification</h2><div class="card"><h3>${P.MOIS[r.month-1]} ${r.year} · ${r.shifts.length} poste${r.shifts.length>1?'s':''}</h3><table style="width:100%;border-collapse:collapse"><tr><th align="left">Jour</th><th align="left">Code</th><th align="left">Poste</th></tr>${r.days.map(d=>`<tr style="${d.kind=='travail'?'font-weight:600':'color:var(--mu)'}"><td>${fd(d.date)}</td><td>${d.code}</td><td>${esc(d.label)}</td></tr>`).join('')}</table></div><small>Valider remplace les postes déjà enregistrés pour ce mois.</small><br><button class="btn" onclick="pvalid()">Valider le planning</button><button class="btn alt" onclick="pim.res=null;render()">Modifier</button>`}
+function exportICS(){const a=shifts(pm.y,pm.m);if(!a.length){alert('Aucun poste à exporter ce mois-ci.');return}const l=document.createElement('a');l.href=URL.createObjectURL(new Blob([P.toICS(a)],{type:'text/calendar'}));l.download='planning-'+mk(pm.y,pm.m)+'.ics';l.click()}
 function plan(){if(pim)return pimp();
  const{y,m}=pm,n=P.daysIn(y,m),off=(new Date(Date.UTC(y,m-1,1)).getUTCDay()+6)%7,sh=shifts(y,m),by=Object.fromEntries(sh.map(s=>[s.date,s])),ot=(user?(R.sh||[]).filter(x=>x.owner!==user.uid&&x.date.startsWith(mk(y,m)+'-')):[]).sort((a,b)=>a.date>b.date?1:-1);
  let g=['L','M','M','J','V','S','D'].map(d=>`<small class="dw">${d}</small>`).join('')+'<i></i>'.repeat(off);
- for(let d=1;d<=n;d++){const dt=mk(y,m)+'-'+String(d).padStart(2,'0'),s=by[dt];g+=`<div class="cd ${s?s.type:''} ${dt==today?'td':''} ${dt==pd?'sel':''}" onclick="pday('${dt}')"><b>${d}</b>${s?`<span>${s.code}</span><small>${esc(sc(s.secteur))}</small>`:''}${ot.filter(x=>x.date==dt).map(x=>`<small style="color:var(--ac2)">${esc((x.name||'?')[0])}·${x.code}</small>`).join('')}</div>`}
+ const fr=[],ow=new Set(ot.map(x=>x.owner)).size;for(let d=1;d<=n;d++){const dt=mk(y,m)+'-'+String(d).padStart(2,'0'),s=by[dt],fz=ow&&!s&&!ot.some(x=>x.date==dt);if(fz)fr.push(d);g+=`<div class="cd ${s?s.type:''} ${fz?'rc':''} ${dt==today?'td':''} ${dt==pd?'sel':''}" onclick="pday('${dt}')"><b>${d}</b>${s?`<span>${s.code}</span><small>${esc(sc(s.secteur))}</small>`:''}${ot.filter(x=>x.date==dt).map(x=>`<small style="color:var(--ac2)">${esc((x.name||'?')[0])}·${x.code}</small>`).join('')}</div>`}
  const s0=by[pd],ed=pd?`<div class="card"><h3>${fd(pd)}</h3><select id="pc"><option value="">Aucun poste (repos)</option>${Object.entries(P.CODES).map(([c,v])=>`<option value="${c}" ${s0&&s0.code==c?'selected':''}>${v.titre}</option>`).join('')}</select><button class="btn" onclick="psave('${pd}')">Enregistrer</button><button class="btn alt" onclick="pday('${pd}')">Fermer</button></div>`:'';
- return `<h2>🗓 Planning</h2><div class="card"><div class="pn"><button class="btn alt" onclick="pmove(-1)" aria-label="Mois précédent">‹</button><h3>${P.MOIS[m-1]} ${y}</h3><button class="btn alt" onclick="pmove(1)" aria-label="Mois suivant">›</button></div><div class="cal">${g}</div><small>Touche un jour pour ajouter, changer ou supprimer un poste.</small></div>${ed}<button class="btn" onclick="pim={text:'',year:pm.y,res:null};render()">Importer mon planning</button><h3 style="margin-top:12px">Postes du mois (${sh.length})</h3>${sh.map(s=>`<div class="row"><div class="g"><b>${fd(s.date)} · ${esc(s.titre)}</b><small>${s.debut} → ${s.finLeLendemain?fd(s.finDate)+' ':''}${s.fin} · rappel à ${s.rappel}</small></div><span class="chip">${s.type=='nuit'?'🌙':'☀️'} ${s.code}</span></div>`).join('')||'<p class="mu">Aucun poste ce mois-ci.</p>'}${ot.length?'<h3 style="margin-top:12px">Planning du foyer</h3>'+ot.map(s=>`<div class="row"><div class="g"><b>${fd(s.date)} · ${esc(s.name||'?')} · ${esc(s.titre)}</b><small>${s.debut} → ${s.finLeLendemain?fd(s.finDate)+' ':''}${s.fin}</small></div><span class="chip">${s.type=='nuit'?'🌙':'☀️'} ${s.code}</span></div>`).join(''):''}`}
+ return `<h2>🗓 Planning</h2><div class="card"><div class="pn"><button class="btn alt" onclick="pmove(-1)" aria-label="Mois précédent">‹</button><h3>${P.MOIS[m-1]} ${y}</h3><button class="btn alt" onclick="pmove(1)" aria-label="Mois suivant">›</button></div><div class="cal">${g}</div><small>Touche un jour pour ajouter, changer ou supprimer un poste.</small>${ow?`<br><small>Repos en commun (cadre vert) : ${fr.length?fr.join(', '):'aucun ce mois-ci'}</small>`:''}</div>${ed}<button class="btn" onclick="pim={text:'',year:pm.y,res:null};render()">Importer mon planning</button><button class="btn alt" onclick="exportICS()">Exporter vers le Calendrier (.ics)</button><h3 style="margin-top:12px">Postes du mois (${sh.length})</h3>${sh.map(s=>`<div class="row"><div class="g"><b>${fd(s.date)} · ${esc(s.titre)}</b><small>${s.debut} → ${s.finLeLendemain?fd(s.finDate)+' ':''}${s.fin} · rappel à ${s.rappel}</small></div><span class="chip">${s.type=='nuit'?'🌙':'☀️'} ${s.code}</span></div>`).join('')||'<p class="mu">Aucun poste ce mois-ci.</p>'}${ot.length?'<h3 style="margin-top:12px">Planning du foyer</h3>'+ot.map(s=>`<div class="row"><div class="g"><b>${fd(s.date)} · ${esc(s.name||'?')} · ${esc(s.titre)}</b><small>${s.debut} → ${s.finLeLendemain?fd(s.finDate)+' ':''}${s.fin}</small></div><span class="chip">${s.type=='nuit'?'🌙':'☀️'} ${s.code}</span></div>`).join(''):''}`}
 function search(){const a=S.items.filter(i=>['title','text','url'].some(k=>String(i[k]||'').toLowerCase().includes(q))&&T[i.t]);return `<h2>Résultats</h2>`+(a.map(row).join('')||'<p class="mu">Aucun résultat.</p>')}
-function render(){$('#app').innerHTML=q?search():({home,loan,tools,set,plan}[tab]||(()=>list(tab)))();document.querySelectorAll('nav a').forEach(a=>a.classList.toggle('on',a.dataset.t==tab))}
-render();
+function stat(){const e=$('#st');if(e)e.textContent=!FB?'○ Mode local (non synchronisé)':!user?'○ Non connecté — touche pour te connecter':navigator.onLine?'● Connecté et synchronisé':'◐ Hors connexion'}
+function render(){stat();$('#app').innerHTML=q?search():({home,loan,tools,set,plan}[tab]||(()=>list(tab)))();document.querySelectorAll('nav a').forEach(a=>a.classList.toggle('on',a.dataset.t==tab))}
+let tx=0,ty=0;const ap=$('#app');ap.addEventListener('touchstart',e=>{tx=e.touches[0].clientX;ty=e.touches[0].clientY},{passive:true});
+ap.addEventListener('touchend',e=>{const r=e.target.closest('.row[data-id]');if(!r)return;const dx=e.changedTouches[0].clientX-tx,dy=e.changedTouches[0].clientY-ty;if(Math.abs(dy)>40||Math.abs(dx)<90)return;const id=r.dataset.id;if(dx>0){const it=S.items.find(x=>x.id==id);if(it&&'done' in it)tog(id)}else del(id)},{passive:true});
+if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+addEventListener('online',render);addEventListener('offline',render);render();
 </script></body></html>

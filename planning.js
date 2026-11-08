@@ -35,5 +35,9 @@ function decode(text,opts){opts=opts||{};const toks=String(text||'').split(/[\s,
   else if(REPOS[K])days.push({day:d,date,code:K,kind:'repos',label:'Repos'});
   else days.push({day:d,date,code:'—',kind:'vide',label:'Aucun poste'})});
  return{ok:true,year:y,month:m,days,shifts,errors:[]}}
-return{CODES,MOIS,ALLOWED,decode,shiftFrom,daysIn};
+const TZ=['BEGIN:VTIMEZONE','TZID:Europe/Paris','BEGIN:DAYLIGHT','TZOFFSETFROM:+0100','TZOFFSETTO:+0200','TZNAME:CEST','DTSTART:19700329T020000','RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU','END:DAYLIGHT','BEGIN:STANDARD','TZOFFSETFROM:+0200','TZOFFSETTO:+0100','TZNAME:CET','DTSTART:19701025T030000','RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU','END:STANDARD','END:VTIMEZONE'];
+function toICS(shifts,opts){opts=opts||{};const stamp=(opts.now||new Date()).toISOString().replace(/[-:]/g,'').slice(0,15)+'Z',dt=(d,h)=>d.replace(/-/g,'')+'T'+h.replace(':','')+'00',L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Mon Hub//Planning//FR','CALSCALE:GREGORIAN',...TZ];
+ shifts.forEach(s=>L.push('BEGIN:VEVENT','UID:shift-'+s.date+'@mon-hub','DTSTAMP:'+stamp,'DTSTART;TZID=Europe/Paris:'+dt(s.date,s.debut),'DTEND;TZID=Europe/Paris:'+dt(s.finDate||s.date,s.fin),'SUMMARY:'+s.titre,'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:'+s.titre,'TRIGGER:-PT30M','END:VALARM','END:VEVENT'));
+ L.push('END:VCALENDAR');return L.join('\r\n')+'\r\n'}
+return{CODES,MOIS,ALLOWED,decode,shiftFrom,daysIn,toICS};
 });
