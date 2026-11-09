@@ -1,4 +1,4 @@
-const V='hub-v1',CORE=['./','index.html','planning.js','manifest.webmanifest','icon-192.png','icon-512.png'];
+const V='hub-v2',CORE=['./','index.html','planning.js','notes.js','manifest.webmanifest','icon-192.png','icon-512.png'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(V).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==V).map(x=>caches.delete(x)))).then(()=>clients.claim()))});
 self.addEventListener('fetch',e=>{const r=e.request,u=new URL(r.url);if(r.method!=='GET')return;
